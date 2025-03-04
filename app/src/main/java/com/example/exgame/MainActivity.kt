@@ -3,99 +3,72 @@ package com.example.exgame
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.exgame.ui.theme.EXGameTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             TicTacToeGame()
-                }
-            }
         }
+    }
+}
 
 @Composable
-fun TicTacToeGame(){
-    var board = remember { mutableStateListOf(
-        mutableStateListOf("", "", ""),
-        mutableStateListOf("", "", ""),
-        mutableStateListOf("", "", "")
-        )}
-    var currentPlayer = remember{ mutableStateOf("x") }
-    currentPlayer.value ="0"
-    var winner by remember { mutableStateOf<String?>(null) }
-    winner.value ="x"
+fun TicTacToeGame() {
+    // ✅ Use List of MutableState to track each cell separately
+    var board = remember {
+        List(3) { row -> List(3) { col -> mutableStateOf("") } }
+    }
+    var currentPlayer = remember { mutableStateOf("x") }
+    var winner = remember { mutableStateOf<String?>(null) }
 
     fun checkWinner(): String? {
         val lines = listOf(
-            // Row
-            listOf(board[0][0], board[0][1], board[0][2]),
-            listOf(board[1][0], board[1][1], board[1][2]),
-            listOf(board[2][0], board[2][1], board[2][2]),
+            // Rows
+            listOf(board[0][0].value, board[0][1].value, board[0][2].value),
+            listOf(board[1][0].value, board[1][1].value, board[1][2].value),
+            listOf(board[2][0].value, board[2][1].value, board[2][2].value),
             // Columns
-            listOf(board[0][0], board[1][0], board[2][0]),
-            listOf(board[0][1], board[1][1], board[2][1]),
-            listOf(board[0][2], board[1][2], board[2][2]),
-            //Diagonals
-            listOf(board[0][0], board[1][1], board[2][2]),
-            listOf(board[0][2], board[1][1], board[2][0]),
+            listOf(board[0][0].value, board[1][0].value, board[2][0].value),
+            listOf(board[0][1].value, board[1][1].value, board[2][1].value),
+            listOf(board[0][2].value, board[1][2].value, board[2][2].value),
+            // Diagonals
+            listOf(board[0][0].value, board[1][1].value, board[2][2].value),
+            listOf(board[0][2].value, board[1][1].value, board[2][0].value),
         )
         for (line in lines) {
-            if (line.all {it == "x"}) return "x"
-            if (line.all {it == "0"}) return "0"
+            if (line.all { it == "x" }) return "x"
+            if (line.all { it == "o" }) return "o"
         }
         return null
     }
 
-    fun onCellClick(row: Int, col: Int){
-        if (board[row][col].isEmpty() && winner == null){
-            board[row][col] = currentPlayer
+    fun onCellClick(row: Int, col: Int) {
+        if (board[row][col].value.isEmpty() && winner.value == null) {
+            board[row][col].value = currentPlayer.value
             winner.value = checkWinner()
-            currentPlayer.value = if (currentPlayer.value == "x") "o" else "x"
+            if (winner.value == null) {
+                currentPlayer.value = if (currentPlayer.value == "x") "o" else "x"
+            }
         }
     }
 
     fun resetGame() {
-        board.clear()
-        board.addAll(
-        listOf(
-            mutableStateListOf("", "", ""),
-            mutableStateListOf("", "", ""),
-            mutableStateListOf("", "", "")
-        )
-        )
-        currentPlayer = "x"
-        winner = null
-
+        board.forEach { row -> row.forEach { it.value = "" } }
+        currentPlayer.value = "x"
+        winner.value = null
     }
 
     Column(
@@ -104,7 +77,7 @@ fun TicTacToeGame(){
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = winner?.let{"winner: $it  \uD83C\uDF89"} ?: "Current Player: $currentPlayer",
+            text = winner.value?.let { "Winner: $it 🎉" } ?: "Current Player: ${currentPlayer.value}",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
@@ -113,7 +86,7 @@ fun TicTacToeGame(){
 
         for (row in 0..2) {
             Row {
-                for (col in 0..2){
+                for (col in 0..2) {
                     Card(
                         modifier = Modifier
                             .size(100.dp)
@@ -121,19 +94,18 @@ fun TicTacToeGame(){
                             .clickable { onCellClick(row, col) },
                         shape = RoundedCornerShape(8.dp),
                         border = BorderStroke(2.dp, Color.Black)
-                    ){
+                    ) {
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier.fillMaxSize()
-                        ){
+                        ) {
                             Text(
-                                text = board[row][col],
+                                text = board[row][col].value,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (board[row][col] == "x") Color.Black else Color.Red
+                                color = if (board[row][col].value == "x") Color.Black else Color.Red
                             )
                         }
-
                     }
                 }
             }
@@ -141,11 +113,8 @@ fun TicTacToeGame(){
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Button(onClick = {resetGame()}) {
+        Button(onClick = { resetGame() }) {
             Text(text = "Restart Game")
         }
-
-
     }
-
 }
